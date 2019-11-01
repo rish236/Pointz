@@ -36,12 +36,6 @@ def extract_comments(html):
                'author': author_sel(item)[0].text_content()}
 
 
-def extract_reply_cids(html):
-    tree = lxml.html.fromstring(html)
-    sel = CSSSelector('.comment-replies-header > .load-comments')
-    return [i.get('data-cid') for i in sel(tree)]
-
-
 def ajax_request(session, url, params, data, retries=10, sleep=20):
     for _ in range(retries):
         response = session.post(url, params=params, data=data)
@@ -88,24 +82,22 @@ def test():
         token_lst.append(page_token)
         html_lst.append(html)
         first_iteration = False
-    return token_lst
+    return token_lst, html_lst
 
+
+#def initial(token, html):
+
+#def download_rest(token, html):
+
+    
 
 def download_comments(youtube_id, sleep=1):
-    session = requests.Session()
+    session = requests.Session() 
     session.headers['User-Agent'] = USER_AGENT
 
     response = session.get(YOUTUBE_COMMENTS_URL.format(youtube_id=youtube_id))
 
     html = response.text
-
-    reply_cids = extract_reply_cids(html)
-
-    ret_cids = []
-    for comment in extract_comments(html):
-        ret_cids.append(comment['cid'])
-        yield comment
-
 
     page_token = find_value(html, 'data-token')
     session_token = find_value(html, 'XSRF_TOKEN', 4)
@@ -114,6 +106,7 @@ def download_comments(youtube_id, sleep=1):
 
     first_iteration = True
 
+    ret_cids = []
 
     while page_token:
         data = {'video_id': youtube_id,
@@ -122,6 +115,7 @@ def download_comments(youtube_id, sleep=1):
         params = {'action_load_comments': 1,
                   'order_by_time': True,
                   'filter': youtube_id}
+                  
 
         if first_iteration:
             params['order_menu'] = True
@@ -132,11 +126,8 @@ def download_comments(youtube_id, sleep=1):
        
 
         page_token, html = response
-        print(page_token)
-
         
 
-        reply_cids += extract_reply_cids(html)
         for comment in extract_comments(html):
             if comment['cid'] not in ret_cids:
                 ret_cids.append(comment['cid'])
@@ -146,30 +137,6 @@ def download_comments(youtube_id, sleep=1):
         time.sleep(sleep)
 
 
-
-
-    for cid in reply_cids:
-        data = {'comment_id': cid,
-                'video_id': youtube_id,
-                'can_reply': 1,
-                'session_token': session_token}
-
-        params = {'action_load_replies': 1,
-                  'order_by_time': True,
-                  'filter': youtube_id,
-                  'tab': 'inbox'}
-
-        response = ajax_request(session, YOUTUBE_COMMENTS_AJAX_URL, params, data)
-        if not response:
-            break
-
-        _, html = response
-
-        for comment in extract_comments(html):
-            if comment['cid'] not in ret_cids:
-                ret_cids.append(comment['cid'])
-                yield comment
-        time.sleep(sleep)
 
 
 def main(argv):
@@ -210,6 +177,7 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    # test = ['-y', 'KnEpLGYS0SM', '-o', 'test.txt']
+    # test = ['-y', 'rxuVzaNne7Q', '-o', 'test.txt']
     # main(test)
-    test()
+    x = test()
+
