@@ -20,7 +20,7 @@ class commentDownloader():
 
         self.first_iteration = True
 
-        self.youtube_id = 'liniXxu3mIg'
+        self.youtube_id = 'hANkniDyM14'
 
         self.prev_page_token = None
 
@@ -85,8 +85,9 @@ class commentDownloader():
 
 
 
-    def ajax_thread_work(self):
+    def ajax_thread_work(self, ith_thread):
 
+        #print("Thread", ith_thread, " started.")
         data = {'video_id': self.youtube_id,
                 'session_token': self.session_token}
 
@@ -105,7 +106,7 @@ class commentDownloader():
 
         page_token, html = response
         self.queue.put(page_token)
-        print("THIS IS THE PAGE TOKEN <-----------------", page_token)
+        #print("THIS IS THE PAGE TOKEN FOR THREAD", ith_thread, "<-----------------", page_token)
         self.prev_page_token = page_token
 
         self.lock.release()
@@ -115,7 +116,7 @@ class commentDownloader():
 
         self.download_comments(html)
 
-
+        #print("Thread", ith_thread, " finished.")
 
     def download_comments(self, html):
         for comment in self.extract_comments(html):
@@ -133,28 +134,33 @@ class commentDownloader():
 
 
 
-        num_threads = 8
+        num_threads = 4
         threads = [0] * num_threads
 
-        thread_response = 1
+        # thread_response will be return as string
+        thread_response = '1'
 
-        # while thread_response is not None:
-        #     for i in range(num_threads):
-        #         threads[i] = threading.Thread(target=self.ajax_thread_work)
-        #         threads[i].start()
-        #         thread_response = self.queue.get()
-        #         if thread_response is None:
-        #             break
+        while len(thread_response)!=0:
+            for i in range(num_threads):
+                threads[i] = threading.Thread(target=self.ajax_thread_work, args=(i,))
+                threads[i].start()
+                thread_response = self.queue.get()
+                #print("YOOOOOO THIS IS THE RESPONSE!!!", type(thread_response), len(thread_response))
+
+                if len(thread_response)==0:
+                    break
+            if len(thread_response) == 0:
+                break
+
+            # for i in range(num_threads):
+            #    threads[i].join()
+
+        # for i in range(num_threads):
+        #     threads[i] = threading.Thread(target=self.ajax_thread_work)
+        #     threads[i].start()
         #
-        #     for i in range(num_threads):
-        #         threads[i].join()
-
-        for i in range(num_threads):
-            threads[i] = threading.Thread(target=self.ajax_thread_work)
-            threads[i].start()
-
-        for i in range(num_threads):
-            threads[i].join()
+        # for i in range(num_threads):
+        #     threads[i].join()
         print("TIME IT TAKESSSSSS------: ", time.time() - start_time)
 
 
