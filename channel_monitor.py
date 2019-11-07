@@ -2,6 +2,19 @@ import requests
 import json
 from bs4 import BeautifulSoup  
 import re 
+import config
+import pandas
+import pymysql
+import datetime
+import time
+
+def connect_db():
+    conn = pymysql.connect(config.host, user=config.user,port=config.port,
+                           passwd=config.password, db=config.dbname)
+
+    conn.autocommit(True)
+    return conn
+
 
 
 
@@ -17,13 +30,27 @@ def monitor(channel_id):
         soup = x.find_all('id')
         lst = [_.text.split(':') for _ in soup]
         video_ids = [i[2] for i in lst if i[1] == 'video']
+        ts = time.time()
+        date_lst = [datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S') for i in range(len(video_ids))]
+
+        conn = connect_db()
+        with conn:
+            cursor = conn.cursor()
+            query = "CREATE TABLE IF NOT EXISTS %s (id VARCHAR(20), date DATETIME, primary key(id))"%(channel_id)
+            cursor.execute(query)
+
+            query = "INSERT INTO {} (id, date) VALUES (%s, %s)".format(channel_id)
+            data = [(a,b) for a,b in zip(video_ids, date_lst)]
+            cursor.executemany(query, data)
+
+
+         
+
 
     
-    #TODO: insert video ids in a file, and compare if new video id is added. if a new vid is added, grab id and send it to the 
-    # comment_downloader script and delete last video id?
+    #TODO: if a new vid is added, grab id and send it to the comment_downloader script and delete last video id?
     
     
-    print(video_ids)
 
 
 
