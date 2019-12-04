@@ -6,23 +6,24 @@ import ast
 
 
 
-def friendship(source, target)
-url = 'https://api.twitter.com/1.1/friendships/show.json?source_screen_name=%s&target_screen_name=%s'%(source, target)
+def friendship(source, target):
+    url = 'https://api.twitter.com/1.1/friendships/show.json?source_screen_name=%s&target_screen_name=%s'%(source, target)
 
-auth = OAuth1(config.twitter_consumer, config.twitter_consumer_secret, config.twitter_access, config.twitter_access_secret)
-r = requests.get(url, auth=auth).json()
+    auth = OAuth1(config.twitter_consumer, config.twitter_consumer_secret, config.twitter_access, config.twitter_access_secret)
+    r = requests.get(url, auth=auth).json()
 
 
-s = str(r.values()).replace("'", '"').split(', "target')
-new = s[0].replace('dict_values([{"source": ', "").replace("}])", "")
+    s = str(r.values()).replace("'", '"').split(', "target')
+    new = s[0].replace('dict_values([{"source": ', "").replace("}])", "")
 
-my_dict = ast.literal_eval(new)
-for k,v in my_dict.items():
-    if k == "following":
-        print(v)
+    my_dict = ast.literal_eval(new)
+    for k,v in my_dict.items():
+        if k == "following":
+            print(v)
 
 
 if __name__ == "__main__":
+
     target = "theweeknd"
     source = "shaden78343862"
     friendship(source, target)
